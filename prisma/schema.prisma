@@ -1,0 +1,36 @@
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String          @id @default(uuid())
+  email        String          @unique
+  password     String?
+  githubAccount GithubAccount?
+  activities   Activity[]
+  createdAt    DateTime        @default(now())
+}
+
+model GithubAccount {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  githubId    String
+  username    String
+  accessToken String
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model Activity {
+  id       String   @id @default(uuid())
+  userId   String
+  platform String
+  date     DateTime
+  type     String
+  user     User     @relation(fields: [userId], references: [id])
+}
