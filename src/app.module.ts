@@ -5,9 +5,13 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { GithubModule } from './github/github.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
-  imports: [AuthModule, UsersModule, GithubModule, PrismaModule],
+  imports: [ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '.env',
+    }),AuthModule, UsersModule, GithubModule, PrismaModule],
   controllers: [AppController],
   providers: [AppService],
 })
