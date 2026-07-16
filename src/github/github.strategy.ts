@@ -26,7 +26,7 @@ export class GithubStrategy extends PassportStrategy(
       clientID,
       clientSecret,
       callbackURL,
-      scope: ['user:email'],
+      scope: ['user:email', 'read:user'],
     });
 
   }

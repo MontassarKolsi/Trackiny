@@ -60,4 +60,11 @@ export class GithubController {
 
     }
 
+    @Get('calendar/:userId')
+    async getCalendar(
+        @Param('userId') userId: string,
+    ) {
+        return this.githubService.getContributionCalendar(userId);
+    }
+
 }
