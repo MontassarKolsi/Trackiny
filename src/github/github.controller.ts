@@ -1,34 +1,52 @@
 import { Controller, Get, UseGuards, Request } from '@nestjs/common';
 import { GithubService } from './github.service';
-import { AuthGuard } from '@nestjs/passport';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GithubAuthGuard } from './github-auth.guard';
+import { GithubStateService } from './github-state.service';
 
 @Controller('github')
 export class GithubController {
+
     constructor(
         private readonly githubService: GithubService,
+        private readonly githubStateService: GithubStateService,
     ) { }
 
+
     @Get('connect')
-    @UseGuards(JwtAuthGuard, GithubAuthGuard)
+    @UseGuards(GithubAuthGuard)
     connectGithub() {
 
     }
 
+
     @Get('callback')
     @UseGuards(GithubAuthGuard)
-    githubCallback(
+    async githubCallback(
         @Request() req
     ) {
 
-        console.log("GitHub user");
-        console.log(req.user);
+        const state = req.query.state;
+
+        const userId =
+            this.githubStateService.consumeState(state);
+
+
+        const githubAccount =
+            await this.githubService.connectGithub(
+                userId!,
+                req.user,
+            );
+
 
         return {
-            user: req.user,
-            state: req.query.state
+            message: "GitHub connected successfully",
+            githubAccount:{
+        id: githubAccount.id,
+        username: githubAccount.username,
+    },
         };
 
     }
+
 }

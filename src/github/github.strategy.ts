@@ -38,9 +38,6 @@ export class GithubStrategy extends PassportStrategy(
     profile: any,
   ) {
 
-    console.log("GitHub profile:");
-    console.log(profile);
-
 
     return {
       githubId: profile.id,

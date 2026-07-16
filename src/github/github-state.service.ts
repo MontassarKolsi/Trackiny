@@ -1,34 +1,31 @@
 import { Injectable } from '@nestjs/common';
-
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class GithubStateService {
 
+  private readonly states = new Map<string, string>();
 
-  generateState(userId:string){
+  createState(userId: string): string {
 
-    const payload = {
-      userId,
-    };
+    const state = randomUUID();
 
+    this.states.set(state, userId);
 
-    return Buffer
-      .from(JSON.stringify(payload))
-      .toString('base64');
-
+    return state;
   }
 
+  consumeState(state: string): string | undefined {
 
+    const userId = this.states.get(state);
 
-  decodeState(state:string){
+    if (!userId) {
+      return undefined;
+    }
 
-    const decoded = Buffer
-      .from(state,'base64')
-      .toString();
+    this.states.delete(state);
 
-
-    return JSON.parse(decoded);
-
+    return userId;
   }
 
 }
