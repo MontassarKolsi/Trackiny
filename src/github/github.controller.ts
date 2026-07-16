@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, UseGuards, Request, Param } from '@nestjs/common';
 import { GithubService } from './github.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GithubAuthGuard } from './github-auth.guard';
@@ -41,11 +41,22 @@ export class GithubController {
 
         return {
             message: "GitHub connected successfully",
-            githubAccount:{
-        id: githubAccount.id,
-        username: githubAccount.username,
-    },
+            githubAccount: {
+                id: githubAccount.id,
+                username: githubAccount.username,
+            },
         };
+
+    }
+
+    @Get('activities/:userId')
+    async getActivities(
+        @Param('userId') userId: string
+    ) {
+
+        return this.githubService.fetchGithubActivities(
+            userId
+        );
 
     }
 
