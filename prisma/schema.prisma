@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,30 +6,43 @@ datasource db {
   provider = "postgresql"
 }
 
-
 model User {
-  id           String          @id @default(uuid())
-  email        String          @unique
+  id           String             @id @default(uuid())
+  email        String             @unique
   password     String?
+
   githubAccount GithubAccount?
-  activities   Activity[]
-  createdAt    DateTime        @default(now())
+
+  contributionCache ContributionCache[]
+
+  createdAt    DateTime           @default(now())
 }
 
 model GithubAccount {
   id          String   @id @default(uuid())
   userId      String   @unique
-  githubId    String
+  githubId    String   @unique
   username    String
   accessToken String
+
   user        User     @relation(fields: [userId], references: [id])
 }
 
-model Activity {
-  id       String   @id @default(uuid())
-  userId   String
-  platform String
-  date     DateTime
-  type     String
-  user     User     @relation(fields: [userId], references: [id])
+model ContributionCache {
+  id           String   @id @default(uuid())
+
+  userId       String
+  platform     String
+
+  data         Json
+
+  lastSyncedAt DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, platform])
+  @@index([userId])
+  @@index([platform])
 }

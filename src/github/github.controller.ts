@@ -1,4 +1,13 @@
-import { Controller, Get, UseGuards, Request, Param } from '@nestjs/common';
+import {
+    Controller,
+    Get,
+    UseGuards,
+    Request,
+    Res,
+} from '@nestjs/common';
+
+import type { Response } from 'express';
+
 import { GithubService } from './github.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GithubAuthGuard } from './github-auth.guard';
@@ -10,21 +19,27 @@ export class GithubController {
     constructor(
         private readonly githubService: GithubService,
         private readonly githubStateService: GithubStateService,
-    ) { }
+    ) {}
 
 
     @Get('connect')
-    @UseGuards(GithubAuthGuard)
+    @UseGuards(JwtAuthGuard, GithubAuthGuard)
     connectGithub() {
-
+        // Passport handles the redirect to GitHub.
     }
 
 
     @Get('callback')
     @UseGuards(GithubAuthGuard)
     async githubCallback(
-        @Request() req
+        @Request() req,
+        @Res() response: Response,
     ) {
+
+        const frontendUrl =
+            process.env.FRONTEND_URL ??
+            'http://localhost:5173';
+
 
         const state = req.query.state;
 
@@ -32,39 +47,64 @@ export class GithubController {
             this.githubStateService.consumeState(state);
 
 
-        const githubAccount =
+        if (!userId) {
+
+            return response.redirect(
+                `${frontendUrl}/dashboard?github=error&message=invalid_state`,
+            );
+
+        }
+
+
+        try {
+
             await this.githubService.connectGithub(
-                userId!,
+                userId,
                 req.user,
             );
 
 
-        return {
-            message: "GitHub connected successfully",
-            githubAccount: {
-                id: githubAccount.id,
-                username: githubAccount.username,
-            },
-        };
+            return response.redirect(
+                `${frontendUrl}/dashboard?github=connected`,
+            );
+
+        } catch (error: any) {
+
+            if (
+                error?.status === 409 ||
+                error?.statusCode === 409
+            ) {
+
+                return response.redirect(
+                    `${frontendUrl}/dashboard?github=already_connected`,
+                );
+
+            }
+
+
+            console.error(
+                'GitHub callback error:',
+                error,
+            );
+
+
+            return response.redirect(
+                `${frontendUrl}/dashboard?github=error`,
+            );
+
+        }
 
     }
 
-    @Get('activities/:userId')
-    async getActivities(
-        @Param('userId') userId: string
-    ) {
 
-        return this.githubService.fetchGithubActivities(
-            userId
+    @Get('dashboard')
+    @UseGuards(JwtAuthGuard)
+    getDashboard(@Request() req) {
+
+        return this.githubService.getGithubDashboard(
+            req.user.id,
         );
 
-    }
-
-    @Get('calendar/:userId')
-    async getCalendar(
-        @Param('userId') userId: string,
-    ) {
-        return this.githubService.getContributionCalendar(userId);
     }
 
 }

@@ -31,6 +31,11 @@ export class GithubStrategy extends PassportStrategy(
 
   }
 
+  authorizationParams(options: any) {
+    return {
+      prompt: "select_account",
+    };
+  }
 
   async validate(
     accessToken: string,
@@ -41,7 +46,7 @@ export class GithubStrategy extends PassportStrategy(
 
     return {
       githubId: profile.id,
-      username: profile.username,
+      username: profile.username ?? profile._json.login,
       email: profile.emails?.[0]?.value,
       accessToken,
     };

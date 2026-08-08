@@ -1,9 +1,9 @@
-import { ExecutionContext, Injectable } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
-import { GithubStateService } from './github-state.service';
+import { ExecutionContext, Injectable } from "@nestjs/common";
+import { AuthGuard } from "@nestjs/passport";
+import { GithubStateService } from "./github-state.service";
 
 @Injectable()
-export class GithubAuthGuard extends AuthGuard('github') {
+export class GithubAuthGuard extends AuthGuard("github") {
 
   constructor(
     private readonly githubStateService: GithubStateService,
@@ -11,26 +11,20 @@ export class GithubAuthGuard extends AuthGuard('github') {
     super();
   }
 
-  private request: any;
+  getAuthenticateOptions(context: ExecutionContext) {
 
-  async canActivate(
-    context: ExecutionContext,
-  ): Promise<boolean> {
+    const request = context.switchToHttp().getRequest();
 
-    this.request = context.switchToHttp().getRequest();
+    if (request.path === "/github/connect") {
 
-    return super.canActivate(context) as Promise<boolean>;
-  }
+      const userId = request.user.id;
 
-  getAuthenticateOptions() {
-const testUserId = "438e5f2f-29e5-4434-ad74-d72dc477b11a";
-    const state = this.githubStateService.createState(
-      testUserId,
-    );
+      return {
+        state: this.githubStateService.createState(userId),
+      };
+    }
 
-    return {
-      state,
-    };
+    return {};
   }
 
 }

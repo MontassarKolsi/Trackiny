@@ -1,203 +1,479 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
+
 import { PrismaService } from '../prisma/prisma.service';
 import { GithubEncryptionService } from './github-encryption.service';
 import { HttpService } from '@nestjs/axios';
+import { GITHUB_DASHBOARD_QUERY } from './github.queries';
+
+export interface ContributionDay {
+  date: string;
+  contributionCount: number;
+}
+
+interface CachedContributionDay {
+  date: string;
+  count: number;
+}
+
+export interface GithubDashboardResult {
+  github: {
+    id: string;
+    username: string;
+    name: string | null;
+    avatar: string;
+    bio: string | null;
+    company: string | null;
+    location: string | null;
+    profileUrl: string;
+    joinedGithub: string;
+    followers: number;
+    following: number;
+    repositories: number;
+    totalContributions: number;
+  };
+
+  activeDays: ContributionDay[];
+}
 
 @Injectable()
 export class GithubService {
 
-    constructor(
-        private prisma: PrismaService,
-        private encryption: GithubEncryptionService,
-        private http: HttpService,
-    ) { }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly encryption: GithubEncryptionService,
+    private readonly http: HttpService,
+  ) {}
 
 
-    async connectGithub(
-        userId: string,
-        githubData: any,
+
+  async connectGithub(
+    userId: string,
+    githubData: any,
+  ) {
+
+    const existingGithub =
+      await this.prisma.githubAccount.findUnique({
+        where: {
+          githubId: githubData.githubId,
+        },
+      });
+
+
+    if (
+      existingGithub &&
+      existingGithub.userId !== userId
     ) {
 
-        return this.prisma.githubAccount.upsert({
-
-            where: {
-                userId,
-            },
-
-            update: {
-                githubId: githubData.githubId,
-                username: githubData.username,
-                accessToken: this.encryption.encrypt(
-                    githubData.accessToken
-                ),
-            },
-
-            create: {
-                userId,
-                githubId: githubData.githubId,
-                username: githubData.username,
-                accessToken: this.encryption.encrypt(
-                    githubData.accessToken
-                ),
-            }
-
-        });
+      throw new ConflictException(
+        'This GitHub account is already linked to another Trackiny account.',
+      );
 
     }
 
-    async fetchGithubActivities(userId: string) {
 
-        const githubAccount =
-            await this.prisma.githubAccount.findUnique({
-                where: {
-                    userId,
-                },
-            });
+    return this.prisma.githubAccount.upsert({
 
+      where: {
+        userId,
+      },
 
-        if (!githubAccount) {
-            throw new Error("GitHub account not connected");
-        }
+      update: {
+        githubId: githubData.githubId,
+        username: githubData.username,
+        accessToken: this.encryption.encrypt(
+          githubData.accessToken,
+        ),
+      },
 
+      create: {
+        userId,
+        githubId: githubData.githubId,
+        username: githubData.username,
+        accessToken: this.encryption.encrypt(
+          githubData.accessToken,
+        ),
+      },
 
-        const token =
-            this.encryption.decrypt(
-                githubAccount.accessToken
-            );
+    });
 
-
-        const response =
-            await this.http.get(
-                `https://api.github.com/users/${githubAccount.username}/events`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        Accept: 'application/vnd.github+json',
-                    },
-                }
-            ).toPromise();
+  }
 
 
-        const events = response?.data;
+
+  async getGithubDashboard(
+    userId: string,
+  ): Promise<GithubDashboardResult> {
+
+    /*
+     * Find connected GitHub account.
+     */
+
+    const githubAccount =
+      await this.prisma.githubAccount.findUnique({
+        where: {
+          userId,
+        },
+      });
 
 
-        return events;
+    if (!githubAccount) {
+
+      throw new NotFoundException(
+        'GitHub account not connected',
+      );
 
     }
-    async getContributionCalendar(userId: string) {
 
-        const githubAccount =
-            await this.prisma.githubAccount.findUnique({
-                where: {
-                    userId,
-                },
-            });
 
-        if (!githubAccount) {
-            throw new Error('GitHub account not connected');
-        }
 
-        const token = this.encryption.decrypt(
-            githubAccount.accessToken,
+    /*
+     * Check cached GitHub data first.
+     *
+     * Cache lifetime:
+     * 1 hour.
+     */
+
+    const cache =
+      await this.prisma.contributionCache.findUnique({
+
+        where: {
+          userId_platform: {
+            userId,
+            platform: 'github',
+          },
+        },
+
+      });
+
+
+
+    const ONE_HOUR =
+      1000 * 60 * 60;
+
+    const cacheIsFresh =
+      cache &&
+      Date.now() -
+        cache.lastSyncedAt.getTime() <
+        ONE_HOUR;
+
+
+
+    /*
+     * If cache is fresh,
+     * use it instead of GitHub API.
+     */
+
+    if (cacheIsFresh) {
+
+      const cachedDays =
+        cache.data as unknown as CachedContributionDay[];
+
+
+      /*
+       * We still need GitHub profile information.
+       *
+       * For now we fetch it from GitHub.
+       *
+       * Later we can cache profile information separately.
+       */
+
+      const token =
+        this.encryption.decrypt(
+          githubAccount.accessToken,
         );
 
-        const query = `
-        query {
-            viewer {
-                id
-                login
-                name
-                avatarUrl
-                bio
-                company
-                location
-                url
-                createdAt
 
-                followers {
-                totalCount
-                }
+      const response =
+        await this.http.axiosRef.post(
 
-                following {
-                totalCount
-                }
+          'https://api.github.com/graphql',
 
-                repositories(
-                ownerAffiliations: OWNER
-                ) {
-                totalCount
-                }
-                contributionsCollection {
-                    contributionCalendar {
-                        totalContributions
-                        weeks {
-                            contributionDays {
-                                date
-                                contributionCount
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    `;
+          {
+            query:
+              GITHUB_DASHBOARD_QUERY,
+          },
 
-        const response = await this.http.axiosRef.post(
-            'https://api.github.com/graphql',
-            {
-                query,
+          {
+            headers: {
+              Authorization:
+                `Bearer ${token}`,
+
+              'Content-Type':
+                'application/json',
             },
-            {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-            },
+          },
+
         );
 
-        const viewer = response.data.data.viewer;
 
-        const activeDays =
-            viewer.contributionsCollection.contributionCalendar.weeks
-                .flatMap((week: any) => week.contributionDays)
-                .filter((day: any) => day.contributionCount > 0);
+      const viewer =
+        response.data.data.viewer;
 
-        return {
 
-            github: {
+      return {
 
-                id: viewer.id,
-                username: viewer.login,
-                name: viewer.name,
+        github: {
+          id: viewer.id,
 
-                avatar: viewer.avatarUrl,
+          username:
+            viewer.login,
 
-                bio: viewer.bio,
+          name:
+            viewer.name,
 
-                company: viewer.company,
+          avatar:
+            viewer.avatarUrl,
 
-                location: viewer.location,
+          bio:
+            viewer.bio,
 
-                profileUrl: viewer.url,
+          company:
+            viewer.company,
 
-                joinedGithub: viewer.createdAt,
+          location:
+            viewer.location,
 
-                followers: viewer.followers.totalCount,
+          profileUrl:
+            viewer.url,
 
-                following: viewer.following.totalCount,
+          joinedGithub:
+            viewer.createdAt,
 
-                repositories: viewer.repositories.totalCount,
+          followers:
+            viewer.followers.totalCount,
 
-                totalContributions:
-                    viewer.contributionsCollection
-                        .contributionCalendar
-                        .totalContributions,
+          following:
+            viewer.following.totalCount,
 
-            },
+          repositories:
+            viewer.repositories.totalCount,
 
-            activeDays,
+          totalContributions:
+            viewer
+              .contributionsCollection
+              .contributionCalendar
+              .totalContributions,
+        },
 
-        };
+        activeDays:
+          cachedDays.map(
+            (day) => ({
+              date: day.date,
+
+              contributionCount:
+                day.count,
+            }),
+          ),
+
+      };
+
     }
+
+
+
+    /*
+     * Cache missing or expired.
+     *
+     * Fetch fresh data from GitHub.
+     */
+
+    const token =
+      this.encryption.decrypt(
+        githubAccount.accessToken,
+      );
+
+
+    const response =
+      await this.http.axiosRef.post(
+
+        'https://api.github.com/graphql',
+
+        {
+          query:
+            GITHUB_DASHBOARD_QUERY,
+        },
+
+        {
+          headers: {
+            Authorization:
+              `Bearer ${token}`,
+
+            'Content-Type':
+              'application/json',
+          },
+        },
+
+      );
+
+
+    const viewer =
+      response.data.data.viewer;
+
+
+
+    /*
+     * Get all contribution days.
+     */
+
+    const contributionDays:
+      ContributionDay[] =
+      viewer
+        .contributionsCollection
+        .contributionCalendar
+        .weeks
+        .flatMap(
+          (week: any) =>
+            week.contributionDays,
+        );
+
+
+
+    /*
+     * IMPORTANT:
+     *
+     * Store ONLY active days.
+     */
+
+    const cachedData:
+      CachedContributionDay[] =
+      contributionDays
+
+        .filter(
+          (day) =>
+            day.contributionCount > 0,
+        )
+
+        .map(
+          (day) => ({
+            date: day.date,
+
+            count:
+              day.contributionCount,
+          }),
+        );
+
+
+
+    /*
+     * Save cache.
+     */
+
+    await this.prisma.contributionCache.upsert({
+
+      where: {
+        userId_platform: {
+          userId,
+          platform: 'github',
+        },
+      },
+
+      update: {
+
+        data:
+          JSON.parse(
+            JSON.stringify(cachedData),
+          ),
+
+        lastSyncedAt:
+          new Date(),
+
+      },
+
+      create: {
+
+        userId,
+
+        platform:
+          'github',
+
+        data:
+          JSON.parse(
+            JSON.stringify(cachedData),
+          ),
+
+        lastSyncedAt:
+          new Date(),
+
+      },
+
+    });
+
+
+
+    /*
+     * Return dashboard.
+     */
+
+    const activeDays:
+      ContributionDay[] =
+      cachedData.map(
+        (day) => ({
+          date:
+            day.date,
+
+          contributionCount:
+            day.count,
+        }),
+      );
+
+
+
+    return {
+
+      github: {
+
+        id:
+          viewer.id,
+
+        username:
+          viewer.login,
+
+        name:
+          viewer.name,
+
+        avatar:
+          viewer.avatarUrl,
+
+        bio:
+          viewer.bio,
+
+        company:
+          viewer.company,
+
+        location:
+          viewer.location,
+
+        profileUrl:
+          viewer.url,
+
+        joinedGithub:
+          viewer.createdAt,
+
+        followers:
+          viewer.followers.totalCount,
+
+        following:
+          viewer.following.totalCount,
+
+        repositories:
+          viewer.repositories.totalCount,
+
+        totalContributions:
+          viewer
+            .contributionsCollection
+            .contributionCalendar
+            .totalContributions,
+
+      },
+
+      activeDays,
+
+    };
+
+  }
 
 }
