@@ -1,41 +1,80 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+
 import { authApi } from "../services/authApi";
+import { useAuth } from "../context/AuthContext";
 
 export default function Register() {
+
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const {
+    loadUser,
+  } = useAuth();
 
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [email, setEmail] =
+    useState("");
 
-  async function handleSubmit(e: React.FormEvent) {
+  const [password, setPassword] =
+    useState("");
+
+  const [loading, setLoading] =
+    useState(false);
+
+  const [error, setError] =
+    useState("");
+
+  async function handleSubmit(
+    e: React.FormEvent,
+  ) {
+
     e.preventDefault();
 
     setError("");
     setLoading(true);
 
     try {
+
       await authApi.register({
         email,
         password,
       });
 
-      navigate("/login");
+      /*
+       * Registration now creates the
+       * HttpOnly JWT cookie.
+       *
+       * Load the authenticated user.
+       */
+      await loadUser();
+
+      /*
+       * Go directly to dashboard.
+       */
+      navigate(
+        "/dashboard",
+        {
+          replace: true,
+        },
+      );
+
     } catch (err: any) {
+
       setError(
         err.response?.data?.message ||
-        "Registration failed."
+        "Registration failed.",
       );
+
     } finally {
+
       setLoading(false);
+
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-100">
+    <div className="flex min-h-screen items-center justify-center bg-slate-100">
+
       <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-lg">
 
         <h1 className="mb-6 text-center text-3xl font-bold">
@@ -55,6 +94,7 @@ export default function Register() {
             onChange={(e) =>
               setEmail(e.target.value)
             }
+            required
           />
 
           <input
@@ -65,6 +105,7 @@ export default function Register() {
             onChange={(e) =>
               setPassword(e.target.value)
             }
+            required
           />
 
           {error && (
@@ -74,6 +115,7 @@ export default function Register() {
           )}
 
           <button
+            type="submit"
             disabled={loading}
             className="w-full rounded-lg bg-black p-3 text-white hover:bg-gray-800 disabled:opacity-50"
           >
@@ -81,9 +123,11 @@ export default function Register() {
               ? "Creating account..."
               : "Create Account"}
           </button>
+
         </form>
 
         <p className="mt-6 text-center">
+
           Already have an account?
 
           <Link
@@ -92,9 +136,11 @@ export default function Register() {
           >
             Login
           </Link>
+
         </p>
 
       </div>
+
     </div>
   );
 }

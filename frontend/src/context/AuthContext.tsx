@@ -48,12 +48,6 @@ export function AuthProvider({
             );
 
 
-            console.log(
-                "ME RESPONSE",
-                response.data
-            );
-
-
             setUser(response.data);
 
 
