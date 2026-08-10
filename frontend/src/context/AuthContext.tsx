@@ -1,112 +1,96 @@
 import {
-    createContext,
-    useContext,
-    useEffect,
-    useState,
+  createContext,
+  useContext,
+  useEffect,
+  useState,
 } from "react";
-import { authApi } from "../services/authApi";
+
 import axios from "axios";
 
+import { authApi } from "../services/authApi";
 
 interface User {
-    id: string;
-    email: string;
+  id: string;
+  email: string;
+  createdAt?: string;
 }
-
 
 interface AuthContextType {
-    user: User | null;
-    loading: boolean;
-    loadUser: () => Promise<void>;
-    logout: () => Promise<void>;
+  user: User | null;
+  loading: boolean;
+  loadUser: () => Promise<void>;
+  logout: () => Promise<void>;
 }
 
-
-const AuthContext = createContext<AuthContextType | null>(null);
-
-
+const AuthContext =
+  createContext<AuthContextType | null>(
+    null,
+  );
 
 export function AuthProvider({
-    children,
+  children,
 }: {
-    children: React.ReactNode;
+  children: React.ReactNode;
 }) {
+  const [user, setUser] =
+    useState<User | null>(null);
 
-    const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] =
+    useState(true);
 
-    const [loading, setLoading] = useState(true);
+  async function loadUser() {
+    try {
+      const response =
+        await axios.get(
+          "http://localhost:3000/auth/me",
+          {
+            withCredentials: true,
+          },
+        );
 
-    async function loadUser() {
-
-        try {
-
-            const response = await axios.get(
-                "http://localhost:3000/auth/me",
-                {
-                    withCredentials: true,
-                }
-            );
-
-
-            setUser(response.data);
-
-
-        } catch (error) {
-
-            setUser(null);
-
-        } finally {
-
-            setLoading(false);
-
-        }
-
+      setUser(response.data);
+    } catch {
+      setUser(null);
+    } finally {
+      setLoading(false);
     }
+  }
 
-    useEffect(() => {
-        loadUser();
-    }, []);
+  useEffect(() => {
+    loadUser();
+  }, []);
 
-
-    async function logout() {
-
-        await authApi.logout();
-
-        setUser(null);
-
+  async function logout() {
+    try {
+      await authApi.logout();
+    } finally {
+      setUser(null);
     }
+  }
 
-
-
-    return (
-        <AuthContext.Provider
-            value={{
-                user,
-                loading,
-                loadUser,
-                logout,
-            }}
-        >
-            {children}
-        </AuthContext.Provider>
-    );
-
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        loadUser,
+        logout,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
-
-
 export function useAuth() {
+  const context =
+    useContext(AuthContext);
 
-    const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error(
+      "useAuth must be used inside AuthProvider",
+    );
+  }
 
-
-    if (!context) {
-        throw new Error(
-            "useAuth must be used inside AuthProvider"
-        );
-    }
-
-
-    return context;
-
+  return context;
 }
