@@ -11,6 +11,8 @@ model User {
   email    String  @unique
   password String?
 
+  googleId String? @unique
+  
   githubAccount     GithubAccount?
   codeforcesAccount CodeforcesAccount?
 
@@ -56,4 +58,16 @@ model ContributionCache {
   @@unique([userId, platform])
   @@index([userId])
   @@index([platform])
+}
+
+model EmailVerification {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  codeHash     String
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([expiresAt])
 }

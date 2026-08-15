@@ -1,21 +1,27 @@
 import {
   Body,
   Controller,
-  Post,
   Get,
+  Post,
+  Request,
   Res,
   UseGuards,
 } from '@nestjs/common';
-
-import type { Response } from 'express';
 
 import { AuthService } from './auth.service';
 
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+//import { VerifyEmailDto } from './dto/verify-email.dto';
+//import { ResendVerificationDto } from './dto/resend-verification.dto';
 
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+
 import { GetUser } from './decorators/get-user.decorator';
+
+import { AuthGuard } from '@nestjs/passport';
+
+import type { Response } from 'express';
 
 @Controller('auth')
 export class AuthController {
@@ -25,23 +31,25 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  me(
-    @GetUser() user: any,
-  ) {
+  me(@GetUser() user: any) {
     return user;
   }
 
   @Post('register')
   async register(
     @Body() dto: RegisterDto,
-
-    @Res({
-      passthrough: true,
-    })
+  ) {
+    return this.authService.register(dto);
+  }
+/*
+  @Post('verify-email')
+  async verifyEmail(
+    @Body() dto: VerifyEmailDto,
+    @Res({ passthrough: true })
     response: Response,
   ) {
     const result =
-      await this.authService.register(dto);
+      await this.authService.verifyEmail(dto);
 
     this.setAuthCookie(
       response,
@@ -49,17 +57,26 @@ export class AuthController {
     );
 
     return {
-      message: 'Registration successful',
+      message:
+        'Email verified successfully.',
+      user: result.user,
     };
   }
 
+  @Post('resend-verification')
+  async resendVerification(
+    @Body()
+    dto: ResendVerificationDto,
+  ) {
+    return this.authService.resendVerificationCode(
+      dto.email,
+    );
+  }
+*/
   @Post('login')
   async login(
     @Body() dto: LoginDto,
-
-    @Res({
-      passthrough: true,
-    })
+    @Res({ passthrough: true })
     response: Response,
   ) {
     const result =
@@ -75,19 +92,104 @@ export class AuthController {
     };
   }
 
+  @Get('google')
+  @UseGuards(AuthGuard('google'))
+  googleLogin() {}
+
+  @Get('google/callback')
+  @UseGuards(AuthGuard('google'))
+  async googleCallback(
+    @Request() req: any,
+    @Res() response: Response,
+  ) {
+    const frontendUrl =
+      process.env.FRONTEND_URL ??
+      'http://localhost:5173';
+
+    try {
+      const result =
+        await this.authService.loginWithGoogle(
+          req.user,
+        );
+
+      this.setAuthCookie(
+        response,
+        result.access_token,
+      );
+
+      return response.redirect(
+        `${frontendUrl}/dashboard`,
+      );
+    } catch (error) {
+      console.error(
+        'Google authentication error:',
+        error,
+      );
+
+      return response.redirect(
+        `${frontendUrl}/login?oauth=error`,
+      );
+    }
+  }
+
+  @Get('github')
+  @UseGuards(AuthGuard('github'))
+  githubLogin() {}
+
+  @Get('github/callback')
+  @UseGuards(AuthGuard('github'))
+  async githubCallback(
+    @Request() req: any,
+    @Res() response: Response,
+  ) {
+    const frontendUrl =
+      process.env.FRONTEND_URL ??
+      'http://localhost:5173';
+
+    try {
+      if (!req.user?.email) {
+        return response.redirect(
+          `${frontendUrl}/login?oauth=email_required`,
+        );
+      }
+
+      const result =
+        await this.authService.loginWithGithub({
+          githubId: req.user.githubId,
+          email: req.user.email,
+        });
+
+      this.setAuthCookie(
+        response,
+        result.access_token,
+      );
+
+      return response.redirect(
+        `${frontendUrl}/dashboard`,
+      );
+    } catch (error) {
+      console.error(
+        'GitHub authentication error:',
+        error,
+      );
+
+      return response.redirect(
+        `${frontendUrl}/login?oauth=error`,
+      );
+    }
+  }
+
   @Post('logout')
   logout(
-    @Res({
-      passthrough: true,
-    })
+    @Res({ passthrough: true })
     response: Response,
   ) {
     response.clearCookie(
       'access_token',
       {
         httpOnly: true,
-        secure: false,
         sameSite: 'lax',
+        secure: false,
         path: '/',
       },
     );
@@ -106,20 +208,14 @@ export class AuthController {
       token,
       {
         httpOnly: true,
-
-        secure:
-          process.env.NODE_ENV ===
-          'production',
-
+        secure: false,
         sameSite: 'lax',
-
         maxAge:
           1000 *
           60 *
           60 *
           24 *
           7,
-
         path: '/',
       },
     );
