@@ -22,7 +22,7 @@ export default function Navbar() {
 
   }
 
-  const publicProfileUrl = `${window.location.origin}/users/${user.id}`;
+  const publicProfileUrl = `${window.location.origin}/users/${user?.id}`;
 
   async function handleShareProfile() {
     await navigator.clipboard.writeText(publicProfileUrl);

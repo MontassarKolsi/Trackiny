@@ -99,10 +99,10 @@ export default function VerifyEmail() {
 
     try {
 
-      await authApi.verifyEmail({
+     /* await authApi.verifyEmail({
         email,
         code,
-      });
+      });*/
 
       await loadUser();
 
@@ -143,9 +143,9 @@ export default function VerifyEmail() {
 
     try {
 
-      await authApi.resendVerification({
+     /* await authApi.resendVerification({
         email,
-      });
+      });*/
 
       setSuccess(
         "A new verification code has been sent.",

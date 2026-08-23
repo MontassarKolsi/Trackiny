@@ -68,4 +68,4 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          VITE_API_URL: https://example.invalid
+          VITE_API_URL: https://trackiny.onrender.com
