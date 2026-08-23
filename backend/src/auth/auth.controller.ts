@@ -190,7 +190,7 @@ export class AuthController {
       'access_token',
       {
         httpOnly: true,
-        sameSite: 'lax',
+        sameSite: isProduction ? 'none' : 'lax',
         secure: isProduction,
         path: '/',
       },
@@ -213,7 +213,7 @@ export class AuthController {
       {
         httpOnly: true,
         secure: isProduction,
-        sameSite: 'lax',
+        sameSite: isProduction ? 'none' : 'lax',
         maxAge:
           1000 *
           60 *
