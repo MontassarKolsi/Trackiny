@@ -11,12 +11,6 @@ export interface LoginDto {
 }
 
 /*
- * ============================================================
- * EMAIL VERIFICATION TYPES
- * CURRENTLY DORMANT
- * ============================================================
- */
-/*
 export interface VerifyEmailDto {
   email: string;
   code: string;
@@ -40,17 +34,6 @@ export const authApi = {
     return response.data;
   },
 
-  /*
-   * ==========================================================
-   * EMAIL VERIFICATION
-   * CURRENTLY DISABLED
-   *
-   * Keep these methods.
-   *
-   * When email verification is re-enabled, simply remove
-   * this comment and the methods are ready to use.
-   * ==========================================================
-   */
 
   /*
   async verifyEmail(

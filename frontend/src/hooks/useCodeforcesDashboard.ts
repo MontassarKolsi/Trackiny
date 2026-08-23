@@ -36,7 +36,7 @@ export interface CodeforcesDashboardData {
 async function fetchCodeforcesDashboard() {
     const response =
         await axios.get(
-            "http://localhost:3000/codeforces/dashboard",
+            `${import.meta.env.VITE_API_URL}/codeforces/dashboard`,
             {
                 withCredentials: true,
             },

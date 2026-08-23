@@ -51,16 +51,6 @@ export default function CombinedContributions() {
             );
         }, [codeforcesData]);
 
-    /*
-     * Combine contributions from every platform.
-     *
-     * Example:
-     *
-     * GitHub       2026-08-15 -> 5
-     * Codeforces   2026-08-15 -> 3
-     *
-     * All platforms -> 8
-     */
     const combinedDays =
         useMemo(() => {
             const map =
@@ -118,14 +108,6 @@ export default function CombinedContributions() {
         githubLoading ||
         codeforcesLoading;
 
-    /*
-     * The individual dashboard queries can fail
-     * when a platform isn't connected.
-     *
-     * That is expected.
-     *
-     * We only need to wait while they are loading.
-     */
     if (loading) {
         return (
             <section className="rounded-2xl border bg-white p-6 shadow-sm">
@@ -138,9 +120,6 @@ export default function CombinedContributions() {
         );
     }
 
-    /*
-     * Nothing connected.
-     */
     if (!hasGithub && !hasCodeforces) {
         return (
             <section className="rounded-2xl border bg-white p-6 shadow-sm">

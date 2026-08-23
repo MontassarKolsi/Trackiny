@@ -44,7 +44,7 @@ export default function Landing() {
 
           const response =
             await axios.get(
-              "http://localhost:3000/users/search",
+              `${import.meta.env.VITE_API_URL}/users/search`,
               {
                 params: {
                   q: value,

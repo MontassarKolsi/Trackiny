@@ -5,7 +5,7 @@ import {
   useState,
 } from "react";
 
-import axios from "axios";
+import { api } from "../services/api";
 
 import { authApi } from "../services/authApi";
 
@@ -41,12 +41,7 @@ export function AuthProvider({
   async function loadUser() {
     try {
       const response =
-        await axios.get(
-          "http://localhost:3000/auth/me",
-          {
-            withCredentials: true,
-          },
-        );
+        await api.get("/auth/me");
 
       setUser(response.data);
     } catch {

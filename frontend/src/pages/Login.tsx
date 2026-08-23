@@ -71,12 +71,12 @@ export default function Login() {
 
   function continueWithGoogle() {
     window.location.href =
-      "http://localhost:3000/auth/google";
+      `${import.meta.env.VITE_API_URL}/auth/google`;
   }
 
   function continueWithGithub() {
     window.location.href =
-      "http://localhost:3000/auth/github";
+      `${import.meta.env.VITE_API_URL}/auth/github`;
   }
 
   return (

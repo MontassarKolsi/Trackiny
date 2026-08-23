@@ -13,11 +13,6 @@ export default function CodeforcesDashboard() {
         error,
     } = useCodeforcesDashboard();
 
-    /*
-     * Codeforces is independent
-     * from GitHub.
-     */
-
     if (isLoading) {
         return (
             <section className="rounded-2xl border bg-white p-8 shadow-sm">
@@ -31,10 +26,6 @@ export default function CodeforcesDashboard() {
             </section>
         );
     }
-
-    /*
-     * Not connected.
-     */
 
     if (error || !data) {
         return (
@@ -50,7 +41,7 @@ export default function CodeforcesDashboard() {
                 </p>
 
                 <a
-                    href="http://localhost:3000/codeforces/connect"
+                    href={`${import.meta.env.VITE_API_URL}/codeforces/connect`}
                     className="mt-5 inline-flex rounded-lg bg-black px-5 py-3 font-medium text-white transition hover:bg-gray-800"
                 >
                     Connect Codeforces

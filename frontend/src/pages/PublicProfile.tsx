@@ -79,7 +79,7 @@ export default function PublicProfile() {
 
     axios
       .get(
-        `http://localhost:3000/users/${id}`,
+        `${import.meta.env.VITE_API_URL}/users/${id}`,
       )
       .then((response) => {
         setProfile(response.data);

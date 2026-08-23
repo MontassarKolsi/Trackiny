@@ -69,7 +69,7 @@ export default function EditProfile() {
       try {
         const response =
           await axios.get(
-            `http://localhost:3000/users/${user.id}`,
+            `${import.meta.env.VITE_API_URL}/users/${user.id}`,
           );
 
         const profile =
@@ -148,7 +148,7 @@ export default function EditProfile() {
 
     try {
       await axios.patch(
-        "http://localhost:3000/users/me/profile",
+        `${import.meta.env.VITE_API_URL}/users/me/profile`,
         {
           ...form,
           certifications,

@@ -15,10 +15,7 @@ interface HeatmapDay {
 }
 
 function formatDate(date: Date) {
-  // IMPORTANT:
-  // Do not use toISOString() here.
-  // It converts local midnight to UTC and can shift
-  // the date by one day.
+
   const year = date.getFullYear();
 
   const month = String(
@@ -70,10 +67,6 @@ export default function Heatmap({
   activeDays,
 }: HeatmapProps) {
 
-  /*
-   * Convert GitHub contribution data
-   * into a quick lookup map.
-   */
   const contributionMap =
     new Map<string, number>();
 
@@ -84,34 +77,22 @@ export default function Heatmap({
     );
   }
 
-  /*
-   * Today.
-   */
   const today = new Date();
 
   today.setHours(0, 0, 0, 0);
 
-  /*
-   * Last 365 days.
-   */
   const oneYearAgo = new Date(today);
 
   oneYearAgo.setDate(
     oneYearAgo.getDate() - 364,
   );
 
-  /*
-   * Make complete Sunday → Saturday weeks.
-   */
   const calendarStart =
     startOfWeek(oneYearAgo);
 
   const calendarEnd =
     endOfWeek(today);
 
-  /*
-   * Create every calendar day.
-   */
   const days: HeatmapDay[] = [];
 
   const cursor =
@@ -133,19 +114,7 @@ export default function Heatmap({
     );
   }
 
-  /*
-   * Split days into weeks.
-   *
-   * Every week is:
-   *
-   * [Sunday]
-   * [Monday]
-   * [Tuesday]
-   * [Wednesday]
-   * [Thursday]
-   * [Friday]
-   * [Saturday]
-   */
+
   const weeks: HeatmapDay[][] = [];
 
   for (
@@ -158,13 +127,7 @@ export default function Heatmap({
     );
   }
 
-  /*
-   * Month labels.
-   *
-   * Each month gets exactly one label,
-   * positioned on the first Sunday
-   * belonging to that month.
-   */
+  
   const monthLabels =
     new Map<number, string>();
 
@@ -207,9 +170,6 @@ export default function Heatmap({
     const sundayDate =
       formatDate(firstSunday);
 
-    /*
-     * Find which week contains it.
-     */
     const weekIndex =
       weeks.findIndex(
         (week) =>
@@ -239,9 +199,6 @@ export default function Heatmap({
       );
     }
 
-    /*
-     * Next month.
-     */
     firstDayOfMonth.setMonth(
       firstDayOfMonth.getMonth() + 1,
     );

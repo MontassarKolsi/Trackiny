@@ -1,0 +1,17 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: trackiny-db
+
+    environment:
+      POSTGRES_USER: trackiny
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: trackiny
+    
+    ports:
+      - "5432:5432"
+    volumes:
+      - trackiny_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  trackiny_postgres_data:

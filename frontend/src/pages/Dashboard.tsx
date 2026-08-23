@@ -205,7 +205,7 @@ export default function Dashboard() {
             </p>
 
             <a
-              href="http://localhost:3000/github/connect"
+              href={`${import.meta.env.VITE_API_URL}/github/connect`}
               className="mt-6 inline-flex rounded-lg bg-black px-6 py-3 font-medium text-white transition hover:bg-gray-800"
             >
               Connect GitHub
