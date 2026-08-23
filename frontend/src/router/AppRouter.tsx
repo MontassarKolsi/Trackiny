@@ -11,11 +11,11 @@ import Register from "../pages/Register";
 import Dashboard from "../pages/Dashboard";
 import Landing from "../pages/Landing";
 import PublicProfile from "../pages/PublicProfile";
+import EditProfile from "../pages/EditProfile";
 
 export default function AppRouter() {
   return (
     <Routes>
-      {/* Public */}
       <Route
         path="/"
         element={<Landing />}
@@ -26,7 +26,6 @@ export default function AppRouter() {
         element={<PublicProfile />}
       />
 
-      {/* Authentication */}
       <Route
         path="/login"
         element={<Login />}
@@ -37,12 +36,20 @@ export default function AppRouter() {
         element={<Register />}
       />
 
-      {/* Protected */}
       <Route
         path="/dashboard"
         element={
           <ProtectedRoute>
             <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/profile/edit"
+        element={
+          <ProtectedRoute>
+            <EditProfile />
           </ProtectedRoute>
         }
       />

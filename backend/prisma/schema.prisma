@@ -12,7 +12,14 @@ model User {
   password String?
 
   googleId String? @unique
-  
+  username String? @unique
+  name           String?
+  bio            String?
+  profilePicture  String?
+  portfolioUrl   String?
+  linkedinUrl    String?
+  diploma        String?
+
   githubAccount     GithubAccount?
   codeforcesAccount CodeforcesAccount?
 

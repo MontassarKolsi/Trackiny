@@ -22,6 +22,11 @@ export default function Navbar() {
 
   }
 
+  const publicProfileUrl = `${window.location.origin}/users/${user.id}`;
+
+  async function handleShareProfile() {
+    await navigator.clipboard.writeText(publicProfileUrl);
+  }
 
 
   return (
@@ -38,7 +43,12 @@ export default function Navbar() {
           {user?.email}
         </span>
 
-
+        <button
+          onClick={handleShareProfile}
+          className="rounded-lg bg-white px-4 py-2 text-black transition hover:bg-gray-200"
+        >
+          Share profile
+        </button>
         <button
           onClick={handleLogout}
           className="rounded-lg bg-white px-4 py-2 text-black"
