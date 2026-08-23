@@ -9,8 +9,6 @@ import {
 import { HttpService } from '@nestjs/axios';
 import { PrismaService } from '../prisma/prisma.service';
 
-import { randomBytes } from 'crypto';
-
 
 interface OidcConfiguration {
   issuer: string;
@@ -79,12 +77,7 @@ export class CodeforcesService {
     process.env.CODEFORCES_CALLBACK_URL ??
     'http://localhost:3000/codeforces/callback';
 
-  /*
-   * Cache lifetime.
-   *
-   * After this period the next dashboard request
-   * refreshes the Codeforces data.
-   */
+
   private readonly CACHE_TTL_MS =
     10 * 60 * 1000;
 
@@ -92,10 +85,6 @@ export class CodeforcesService {
     private readonly prisma: PrismaService,
     private readonly http: HttpService,
   ) { }
-
-  // --------------------------------------------------
-  // OIDC configuration
-  // --------------------------------------------------
 
   private async getOidcConfiguration(): Promise<OidcConfiguration> {
     if (!this.clientId || !this.clientSecret) {
@@ -136,10 +125,6 @@ export class CodeforcesService {
     }
   }
 
-  // --------------------------------------------------
-  // Create authorization URL
-  // --------------------------------------------------
-
   async createAuthorizationUrl(
     state: string,
     nonce: string,
@@ -159,10 +144,6 @@ export class CodeforcesService {
 
     return `${configuration.authorization_endpoint}?${params.toString()}`;
   }
-
-  // --------------------------------------------------
-  // OAuth token exchange
-  // --------------------------------------------------
 
   private async exchangeCode(
     code: string,
@@ -204,10 +185,6 @@ export class CodeforcesService {
       );
     }
   }
-
-  // --------------------------------------------------
-  // Handle OAuth callback
-  // --------------------------------------------------
 
   async handleCallback(
     code: string,
@@ -267,9 +244,6 @@ export class CodeforcesService {
       );
     }
 
-    /*
-     * Verify nonce when Codeforces provides it.
-     */
     if (
       claims.nonce &&
       claims.nonce !== nonce
@@ -291,10 +265,6 @@ export class CodeforcesService {
       );
     }
 
-    /*
-     * Check whether this Codeforces account
-     * already belongs to another Trackiny user.
-     */
     const existingById =
       await this.prisma.codeforcesAccount.findUnique(
         {
@@ -313,9 +283,6 @@ export class CodeforcesService {
       );
     }
 
-    /*
-     * Also check handle uniqueness.
-     */
     const existingByHandle =
       await this.prisma.codeforcesAccount.findUnique(
         {
@@ -334,10 +301,6 @@ export class CodeforcesService {
       );
     }
 
-    /*
-     * A Trackiny user can only have one
-     * Codeforces account.
-     */
     const existingForUser =
       await this.prisma.codeforcesAccount.findUnique(
         {
@@ -406,9 +369,6 @@ export class CodeforcesService {
         },
       );
 
-    /*
-     * Immediately fetch and cache activity.
-     */
     await this.refreshContributionCache(
       userId,
       account.handle,
@@ -424,10 +384,6 @@ export class CodeforcesService {
       },
     };
   }
-
-  // --------------------------------------------------
-  // Codeforces user info
-  // --------------------------------------------------
 
   private async getCodeforcesUser(
     handle: string,
@@ -458,10 +414,6 @@ export class CodeforcesService {
       return null;
     }
   }
-
-  // --------------------------------------------------
-  // Get submissions
-  // --------------------------------------------------
 
   private async getSubmissions(
     handle: string,
@@ -502,10 +454,6 @@ export class CodeforcesService {
       );
     }
   }
-
-  // --------------------------------------------------
-  // Build contribution days
-  // --------------------------------------------------
 
   private buildContributionDays(
     submissions: CodeforcesSubmission[],
@@ -554,10 +502,6 @@ export class CodeforcesService {
       );
   }
 
-  // --------------------------------------------------
-  // Refresh contribution cache
-  // --------------------------------------------------
-
   private async refreshContributionCache(
     userId: string,
     handle: string,
@@ -567,10 +511,6 @@ export class CodeforcesService {
         handle,
       );
 
-    /*
-     * Only active days are stored.
-     * Zero-contribution days are discarded.
-     */
     const cachedData =
       this.buildContributionDays(
         submissions,
@@ -608,10 +548,6 @@ export class CodeforcesService {
 
     return cachedData;
   }
-
-  // --------------------------------------------------
-  // Get Rating History
-  // --------------------------------------------------
 
   private async getCodeforcesRatingHistory(
     handle: string,
@@ -667,11 +603,7 @@ export class CodeforcesService {
       return [];
     }
   }
-
-  // --------------------------------------------------
-  // Dashboard
-  // --------------------------------------------------
-
+/**/
   async getDashboard(
     userId: string,
   ): Promise<{
@@ -737,11 +669,6 @@ export class CodeforcesService {
         );
     }
 
-    /*
-     * Refresh profile information too.
-     * Rating/avatar can change independently
-     * from the cached activity.
-     */
     const profile =
       await this.getCodeforcesUser(
         account.handle,

@@ -102,15 +102,10 @@ export class GithubService {
 
   }
 
-
-
   async getGithubDashboard(
     userId: string,
   ): Promise<GithubDashboardResult> {
 
-    /*
-     * Find connected GitHub account.
-     */
 
     const githubAccount =
       await this.prisma.githubAccount.findUnique({
@@ -128,14 +123,6 @@ export class GithubService {
 
     }
 
-
-
-    /*
-     * Check cached GitHub data first.
-     *
-     * Cache lifetime:
-     * 1 hour.
-     */
 
     const cache =
       await this.prisma.contributionCache.findUnique({
@@ -161,25 +148,11 @@ export class GithubService {
         ONE_HOUR;
 
 
-
-    /*
-     * If cache is fresh,
-     * use it instead of GitHub API.
-     */
-
     if (cacheIsFresh) {
 
       const cachedDays =
         cache.data as unknown as CachedContributionDay[];
 
-
-      /*
-       * We still need GitHub profile information.
-       *
-       * For now we fetch it from GitHub.
-       *
-       * Later we can cache profile information separately.
-       */
 
       const token =
         this.encryption.decrypt(
@@ -274,13 +247,6 @@ export class GithubService {
     }
 
 
-
-    /*
-     * Cache missing or expired.
-     *
-     * Fetch fresh data from GitHub.
-     */
-
     const token =
       this.encryption.decrypt(
         githubAccount.accessToken,
@@ -314,11 +280,6 @@ export class GithubService {
       response.data.data.viewer;
 
 
-
-    /*
-     * Get all contribution days.
-     */
-
     const contributionDays:
       ContributionDay[] =
       viewer
@@ -330,13 +291,6 @@ export class GithubService {
             week.contributionDays,
         );
 
-
-
-    /*
-     * IMPORTANT:
-     *
-     * Store ONLY active days.
-     */
 
     const cachedData:
       CachedContributionDay[] =
@@ -357,10 +311,6 @@ export class GithubService {
         );
 
 
-
-    /*
-     * Save cache.
-     */
 
     await this.prisma.contributionCache.upsert({
 
@@ -402,11 +352,6 @@ export class GithubService {
 
     });
 
-
-
-    /*
-     * Return dashboard.
-     */
 
     const activeDays:
       ContributionDay[] =

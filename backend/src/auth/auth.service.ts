@@ -363,10 +363,7 @@ export class AuthService {
         },
       });
 
-    /*
-     * If the email already belongs to a user,
-     * make sure the Google account is linked.
-     */
+    
     if (user) {
       if (
         user.googleId &&
@@ -392,10 +389,7 @@ export class AuthService {
       }
     }
 
-    /*
-     * No existing email:
-     * create a new Google-only account.
-     */
+    
     else {
       user =
         await this.prisma.user.create({
@@ -446,12 +440,6 @@ export class AuthService {
       });
 
     if (user) {
-      /*
-       * Existing Trackiny account.
-       *
-       * The GitHub account itself is handled
-       * by GithubService when connecting GitHub.
-       */
     } else {
       user =
         await this.prisma.user.create({

@@ -24,12 +24,6 @@ export class CodeforcesController {
     private readonly stateService: CodeforcesStateService,
   ) { }
 
-  /*
-   * --------------------------------------------------
-   * Start Codeforces OAuth/OIDC connection
-   * --------------------------------------------------
-   */
-
 
   @Get('connect')
   @UseGuards(JwtAuthGuard)
@@ -42,11 +36,6 @@ export class CodeforcesController {
     const state = randomBytes(32).toString('hex');
 
     const nonce = randomBytes(32).toString('hex');
-
-    /*
-     * Associate this OAuth attempt with
-     * the currently authenticated Trackiny user.
-     */
 
     this.stateService.createState(
       userId,
@@ -65,11 +54,7 @@ export class CodeforcesController {
     );
   }
 
-  /*
-    * --------------------------------------------------
-    * Codeforces dashboard data
-    * --------------------------------------------------
-    */
+  /**/
 
   @Get('dashboard')
   @UseGuards(JwtAuthGuard)
@@ -80,12 +65,7 @@ export class CodeforcesController {
       req.user.id,
     );
   }
-
-  /*
-   * --------------------------------------------------
-   * Codeforces OAuth/OIDC callback
-   * --------------------------------------------------
-   */
+/**/
 
   @Get('callback')
   async callback(
@@ -98,29 +78,17 @@ export class CodeforcesController {
       process.env.FRONTEND_URL ??
       'http://localhost:5173';
 
-    /*
-     * User cancelled authorization.
-     */
-
     if (error) {
       return response.redirect(
         `${frontendUrl}/dashboard?codeforces=cancelled`,
       );
     }
 
-    /*
-     * Missing OAuth parameters.
-     */
-
     if (!code || !state) {
       return response.redirect(
         `${frontendUrl}/dashboard?codeforces=error`,
       );
     }
-
-    /*
-     * Validate and consume state.
-     */
 
     const stored =
       this.stateService.consumeState(
@@ -148,11 +116,6 @@ export class CodeforcesController {
         'Codeforces callback error:',
         error,
       );
-
-      /*
-       * Same Codeforces account already belongs
-       * to another Trackiny account.
-       */
 
       if (
         error?.status === 409 ||
