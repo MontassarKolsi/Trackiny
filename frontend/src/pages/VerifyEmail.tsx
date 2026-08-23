@@ -9,7 +9,7 @@ import {
   useSearchParams,
 } from "react-router-dom";
 
-import { authApi } from "../services/authApi";
+//import { authApi } from "../services/authApi";
 import { useAuth } from "../context/AuthContext";
 
 export default function VerifyEmail() {
